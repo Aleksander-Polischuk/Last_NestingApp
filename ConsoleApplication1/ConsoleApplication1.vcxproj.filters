@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Исходные файлы">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Файлы заголовков">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Исходные файлы\Clipper">
+      <UniqueIdentifier>{aa5faada-7791-4017-91c9-ca7343249d33}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="clipper_lib\src\clipper.engine.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="clipper_lib\src\clipper.offset.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="clipper_lib\src\clipper.rectclip.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="clipper_lib\src\clipper.triangulation.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+    <ClCompile Include="geometry.cpp">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClCompile>
+    <ClCompile Include="io_utils.cpp">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClCompile>
+    <ClCompile Include="nesting.cpp">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.core.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.engine.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.export.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.minkowski.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.offset.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.rectclip.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.triangulation.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="clipper_lib\include\clipper2\clipper.version.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="json.hpp">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="geometry.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="io_utils.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+    <ClInclude Include="nesting.h">
+      <Filter>Исходные файлы\Clipper</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
