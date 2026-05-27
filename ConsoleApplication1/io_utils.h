@@ -13,5 +13,6 @@
 #include "types.h"
 
 bool ParseAndCreatePart(const json& item, std::vector<Part>& queue);
-void SaveJSON(const std::string& filename, const std::vector<PlacedSheet>& allSheets);
+//void SaveJSON(const std::string& filename, const std::vector<PlacedSheet>& allSheets, double total_perimeter_mm, double machine_time_min, int error_code = ST_OK);
+void SaveJSON(const std::string& filename, const std::vector<PlacedSheet>& allSheets, double machine_speed, double total_perimeter_mm, int error_code = ST_OK);
 void SaveMultiSheetSVG(const std::string& filename, const std::vector<PlacedSheet>& allSheets, const json& inputParams, double time_sec, size_t totalPlacedCount, double totalPlacedAreaMm2, double total_cut_length_mm);

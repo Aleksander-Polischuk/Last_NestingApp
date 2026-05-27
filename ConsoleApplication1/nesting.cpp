@@ -1,10 +1,10 @@
 /*
  * ==============================================================================
  * ФАЙЛ: nesting.cpp
- * ОПИС: Ядро алгоритму розкрою (Nesting Engine / Bottom-Left Algorithm).
- * Оснащено оптимізаціями: Smart X-Jump, Zero-Allocation Clipper,
- * Early Intersection та Coarse-to-Fine Grid Search.
- * Додано: Multi-Bin Optimization (Економічна симуляція форматів листів).
+ * ОПИС: Ядро алгоритму розкрою (Nesting Engine).
+ *       Використовує надійний багатопотоковий Grid Scan з оптимізацією
+ *       X-Jump та Early Intersection. Формула оцінки (score) оптимізована
+ *       для стягування деталей у щільний блок (Мангеттенська гравітація).
  * ==============================================================================
  */
 #include "nesting.h"
@@ -18,6 +18,7 @@ namespace {
     struct ThreadLocalBest {
         int64_t y = INT64_MAX;
         int64_t x = INT64_MAX;
+        int64_t score = INT64_MAX; // Оцінка компактності
         Path64 finalInflated;
         Rect64 bounds;
         int angle = -1;
@@ -41,11 +42,9 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
         std::vector<size_t> best_placed_indices;
         double best_area_for_sheet = 0;
 
-        // --- ЧИСТИЙ ВИВІД ПРОГРЕСУ В КОНСОЛЬ ---
         int sheetNum = (int)allSheets.size() + 1;
         std::cout << "Обробка аркуша №" << sheetNum << "... (Залишилось деталей: " << (totalItems - totalPlaced) << " / " << totalItems << ")\n";
 
-        // --- ВІРТУАЛЬНА ПРИМІРОЧНА (MULTI-BIN OPTIMIZATION) ---
         for (size_t s_idx = 0; s_idx < available_sheets.size(); ++s_idx) {
             const auto& sheet_tpl = available_sheets[s_idx];
             int64_t sW = static_cast<int64_t>(sheet_tpl.w * SCALE);
@@ -62,9 +61,9 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
             for (auto& part : queue) {
                 if (sim_placed[part.q_index]) continue;
 
+                std::atomic<int64_t> global_best_score{ INT64_MAX };
                 std::vector<ThreadLocalBest> local_bests(num_cores);
                 std::vector<std::thread> workers;
-                std::atomic<int64_t> global_best_y{ INT64_MAX };
 
                 int64_t min_shape_h = INT64_MAX;
                 int64_t max_shape_h = 0;
@@ -160,7 +159,13 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
                                     }
 
                                     if (!collision) {
-                                        if (y < row_best.y || (y == row_best.y && x < row_best.x)) {
+                                        // ОЦІНКА: Збалансована гравітація. 
+                                        // Стягуємо фігури до кута. y * 2 гарантує, що аркуш
+                                        // заповнюватиметься знизу вгору щільними рядами.
+                                        int64_t score = y * sW + x;
+
+                                        if (score < row_best.score) {
+                                            row_best.score = score;
                                             row_best.y = y;
                                             row_best.x = x;
                                             row_best.angle = shape.angle;
@@ -168,7 +173,7 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
                                             row_best.bounds = candBounds;
                                         }
                                         row_found = true;
-                                        break;
+                                        break; // Переходимо до наступного кута (shape)
                                     }
                                     else {
                                         x = next_x;
@@ -180,7 +185,11 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
 
                         for (int64_t i = my_start_step; i < my_end_step; ++i) {
                             int64_t y_coarse = marg + i * coarse_step;
-                            if (y_coarse > global_best_y.load(std::memory_order_relaxed)) break;
+
+                            // Ранній вихід: якщо мінімально можливий score для цього Y 
+                            // вже гірший за глобально знайдений найкращий
+                            int64_t min_possible_score = y_coarse * sW + marg;
+                            if (min_possible_score > global_best_score.load(std::memory_order_relaxed)) break;
 
                             ThreadLocalBest coarse_best;
                             bool found_coarse = ScanRow(y_coarse, coarse_best);
@@ -199,9 +208,9 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
 
                                 local = found_fine ? fine_best : coarse_best;
 
-                                int64_t current_best_y = global_best_y.load(std::memory_order_relaxed);
-                                while (local.y < current_best_y) {
-                                    if (global_best_y.compare_exchange_weak(current_best_y, local.y, std::memory_order_relaxed)) {
+                                int64_t current_best_score = global_best_score.load(std::memory_order_relaxed);
+                                while (local.score < current_best_score) {
+                                    if (global_best_score.compare_exchange_weak(current_best_score, local.score, std::memory_order_relaxed)) {
                                         break;
                                     }
                                 }
@@ -220,7 +229,7 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
                 ThreadLocalBest absolute_best;
                 for (const auto& lb : local_bests) {
                     if (lb.angle != -1) {
-                        if (lb.y < absolute_best.y || (lb.y == absolute_best.y && lb.x < absolute_best.x)) {
+                        if (lb.score < absolute_best.score) {
                             absolute_best = lb;
                         }
                     }
@@ -258,7 +267,6 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
             break;
         }
 
-        // Записуємо результати в головну чергу
         for (size_t q_idx : best_placed_indices) {
             queue[q_idx].is_placed = true;
             totalPlaced++;
@@ -266,5 +274,58 @@ void RunNesting(std::vector<Part>& queue, std::vector<PlacedSheet>& allSheets, c
         total_placed_area_mm2 += best_area_for_sheet / (SCALE * SCALE);
 
         allSheets.push_back({ best_sheet_parts, available_sheets[best_sheet_idx] });
+
+        // --- ДОДАНО: ОПТИМІЗАЦІЯ ДУБЛЮВАННЯ АРКУШІВ ---
+        // 1. Рахуємо, скільки яких деталей (за ID) лежить на щойно запакованому аркуші
+        std::map<int, int> placed_ids_count;
+        for (const auto& p : best_sheet_parts) {
+            int pid = p.meta.value("id", 0);
+            placed_ids_count[pid]++;
+        }
+
+        // 2. Спробуємо дублювати цей аркуш, поки вистачає нерозміщених деталей
+        bool can_duplicate = true;
+        while (can_duplicate && totalPlaced < totalItems) {
+            // Рахуємо залишок деталей у черзі
+            std::map<int, int> remaining_ids_count;
+            for (const auto& qp : queue) {
+                if (!qp.is_placed) {
+                    int pid = qp.meta.value("id", 0);
+                    remaining_ids_count[pid]++;
+                }
+            }
+
+            // Перевіряємо, чи вистачає залишку для повної копії аркуша
+            for (const auto& kv : placed_ids_count) {
+                if (remaining_ids_count[kv.first] < kv.second) {
+                    can_duplicate = false;
+                    break;
+                }
+            }
+
+            // Якщо вистачає - миттєво створюємо копію!
+            if (can_duplicate) {
+                std::map<int, int> to_mark = placed_ids_count;
+                for (auto& qp : queue) {
+                    if (!qp.is_placed) {
+                        int pid = qp.meta.value("id", 0);
+                        if (to_mark[pid] > 0) {
+                            qp.is_placed = true;
+                            to_mark[pid]--;
+                            totalPlaced++;
+                        }
+                    }
+                }
+
+                // Додаємо точну копію аркуша в загальний масив
+                allSheets.push_back({ best_sheet_parts, available_sheets[best_sheet_idx] });
+                total_placed_area_mm2 += best_area_for_sheet / (SCALE * SCALE);
+
+                std::cout << "-> Миттєво здубльовано аркуш! (Залишилось деталей: " << (totalItems - totalPlaced) << ")\n";
+            }
+        }
+        // --- КІНЕЦЬ ОПТИМІЗАЦІЇ ---
     }
+
+
 }

@@ -22,3 +22,8 @@ inline bool BoundsOverlap(const Rect64& a, const Rect64& b) {
 }
 std::vector<int> GenerateSmartAngles(const Path64& path, const std::string& type, double w = 0, double h = 0);
 double CalculatePerimeter(const Path64& path);
+std::string DetectPolygonType(const Path64& path);
+// Додайте це до інших оголошень
+double GetPathsPerimeter(const Paths64& paths);
+double GetBoundaryEdgesLength(const Paths64& paths, int64_t sheetW_scaled, int64_t sheetH_scaled);
+double CalculateOptimizedCutLength(const Paths64& placedParts, double sheetWidthMm, double sheetHeightMm);
